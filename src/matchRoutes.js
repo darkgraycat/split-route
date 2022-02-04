@@ -15,10 +15,11 @@ const matchRoutes = (matcher) => {
       cases[value] = middlewares;
       return builder;
     },
-    end: (...defaultMiddlewares) => async (req, res, next) => {
+    default: (...middlewares) => builder.case('default', ...middlewares),
+    end: () => async (req, res, next) => {
       try {
         const caseKey = await matcher(req);
-        const middlewares = cases[caseKey] || defaultMiddlewares;
+        const middlewares = cases[caseKey] || cases.default;
         await invokeMiddlewares(middlewares, req, res, next);
       } catch (error) {
         return next(error);

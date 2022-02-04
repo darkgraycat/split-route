@@ -15,8 +15,18 @@ router.get('/one/:state',
     .case('a', middlewareA, middlewareB, middlewareC)
     .case('b', middlewareB, middlewareC)
     .case('c', middlewareC)
-    .end(middlewareErrorB),
+    .end(),
   controllerOne
+);
+
+router.get('/two/:state',
+  parseState,
+  enrichData('epv2 TWO: '),
+  matchRoutes(req => req.state)
+    .case('a', middlewareA, controllerOne)
+    .case('b', middlewareB, controllerTwo)
+    .default(middlewareErrorB)
+    .end()
 );
 
 module.exports = router;
