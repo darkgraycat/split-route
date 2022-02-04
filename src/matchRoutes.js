@@ -3,7 +3,7 @@ const invokeMiddlewares = async (middlewares, req, res, next, i = 0) => {
     if (err) return next(err);
     await invokeMiddlewares(middlewares, req, res, next, ++i);
   }
-  return i < middlewares.length
+  return i < middlewares.length || 0
     ? await middlewares[i](req, res, invokeNext)
     : next();
 };
@@ -15,10 +15,12 @@ const matchRoutes = (matcher) => {
       cases[value] = middlewares;
       return builder;
     },
+    default: (...middlewares) => builder.case('default', ...middlewares),
     end: () => async (req, res, next) => {
       try {
-        const result = await matcher(req);
-        await invokeMiddlewares(cases[result], req, res, next);
+        const caseKey = await matcher(req);
+        const middlewares = cases[caseKey] || cases.default;
+        await invokeMiddlewares(middlewares, req, res, next);
       } catch (error) {
         return next(error);
       }

@@ -19,4 +19,14 @@ router.get('/one/:state',
   controllerOne
 );
 
+router.get('/two/:state',
+  parseState,
+  enrichData('epv2 TWO: '),
+  matchRoutes(req => req.state)
+    .case('a', middlewareA, controllerOne)
+    .case('b', middlewareB, controllerTwo)
+    .default(middlewareErrorB)
+    .end()
+);
+
 module.exports = router;
