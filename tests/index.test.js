@@ -1,6 +1,8 @@
 const express = require('express');
 const request = require('supertest');
-const matchRoutes = require('../src/matchRoutes');
+const matchRoutes = require('../lib');
+
+console.log(matchRoutes);
 
 describe('Test routes matcher middleware', () => {
   const matcher = jest.fn();
