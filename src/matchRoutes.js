@@ -9,13 +9,20 @@ const invokeMiddlewares = async (middlewares, req, res, next, i = 0) => {
 };
 
 const matchRoutes = (matcher) => {
+  const cases = {};
   const builder = {
     case: (value, ...middlewares) => {
-      console.log(value);
-      console.log(middlewares);
+      cases[value] = middlewares;
       return builder;
     },
-    end: () => (req, res, next) => { }
+    end: () => async (req, res, next) => {
+      try {
+        const result = await matcher(req);
+        await invokeMiddlewares(cases[result], req, res, next);
+      } catch (error) {
+        return next(error);
+      }
+    }
   }
   return builder;
 };

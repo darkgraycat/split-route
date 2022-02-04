@@ -11,9 +11,10 @@ const {
 router.get('/one/:state',
   parseState,
   enrichData('epv2 ONE: '),
-  matchRoutes(req => req.state > 0)
-    .case(true, middlewareA, middlewareB)
-    .case(false, middlewareC, middlewareB, middlewareA)
+  matchRoutes(req => req.state)
+    .case('a', middlewareA, middlewareB, middlewareC)
+    .case('b', middlewareB, middlewareC)
+    .case('c', middlewareC)
     .end(),
   controllerOne
 );
