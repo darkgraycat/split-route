@@ -25,3 +25,7 @@ There only 4 endpoints to test:
 
  if state==11 `CONTROLLER TWO [ep COMPLEX: CAA]` - and look at console - express tries to run controllerOne after sending response
                           
+# IMPORTANT
+New syntax implemented.
+Look at routerv2.js file.
+Use this to test `GET/localhost:8088/v2/one/:state` state can be one of a, b, c. Responses: ABC, BC, C
