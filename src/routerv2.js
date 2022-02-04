@@ -15,7 +15,7 @@ router.get('/one/:state',
     .case('a', middlewareA, middlewareB, middlewareC)
     .case('b', middlewareB, middlewareC)
     .case('c', middlewareC)
-    .end(),
+    .end(middlewareErrorB),
   controllerOne
 );
 
