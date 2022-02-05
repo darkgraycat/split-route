@@ -2,16 +2,16 @@ const express = require('express');
 const request = require('supertest');
 const matchRoutes = require('../lib');
 
-console.log(matchRoutes);
-
 describe('Test routes matcher middleware', () => {
   const matcher = jest.fn();
   const sleep = (ms) => new Promise((resolve => setTimeout(resolve, ms)));
   const controllerMock = (req, res) => res.status(200).send(`state is ${req.state}`);
   const errorHandlerMock = (err, req, res, next) => res.status(500).send(`error ${err.message}`);
-  const middlewareMock = (state, timeout, error = false) => async (req, res, next) => {
+  const middlewareMock = (state, timeout, error) => async (req, res, next) => {
     await sleep(timeout || 0);
-    if (error) throw error;
+    if (error) {
+      return next(error);
+    }
     (req.state) ? req.state += state : req.state = state || '';
     next();
   };
@@ -147,4 +147,96 @@ describe('Test routes matcher middleware', () => {
     await request(app).get('/').expect(200, 'state is SPLITTED DEFAULT');
   });
 
+  it('should test error handling functionality', async () => {
+    const app = express()
+      .use(
+        matchRoutes(matcher)
+          .case('a',
+            (req, res, next) => { throw new Error('A unhandled error'); },
+            (req, res, next) => { return next(new Error('A error from next')); }
+          )
+          .case('b',
+            (req, res, next) => { return next(new Error('B error from next')); },
+            (req, res, next) => { throw new Error('B unhandled error'); }
+          ).end(),
+        controllerMock
+      ).use(errorHandlerMock);
+
+    matcher.mockResolvedValueOnce('a');
+    await request(app).get('/').expect(500, 'error A unhandled error');
+
+    matcher.mockResolvedValueOnce('b');
+    await request(app).get('/').expect(500, 'error B error from next');
+
+    matcher.mockRejectedValueOnce(new Error('matcher error'));
+    await request(app).get('/').expect(500, 'error matcher error');
+
+    matcher.mockResolvedValueOnce();
+    await request(app).get('/').expect(200, 'state is undefined');
+  });
+
+  it('should test various types of case values', async () => {
+    const app = express()
+      .use(
+        matchRoutes(matcher)
+          .case('string', middlewareMock('String'))
+          .case(42, middlewareMock('Number'))
+          .case(false, middlewareMock('Boolean'))
+          .case(['foo', 'bar', null, 42], middlewareMock('Array'))
+          .end(),
+        controllerMock
+      ).use(errorHandlerMock);
+
+    matcher.mockResolvedValueOnce('string');
+    await request(app).get('/').expect(200, 'state is String');
+
+    matcher.mockResolvedValueOnce(42);
+    await request(app).get('/').expect(200, 'state is Number');
+
+    matcher.mockResolvedValueOnce(false);
+    await request(app).get('/').expect(200, 'state is Boolean');
+
+    matcher.mockResolvedValueOnce(['foo', 'bar', null, 42]);
+    await request(app).get('/').expect(200, 'state is Array');
+  });
+
+  it('should test complex structure', async () => {
+    const app = express()
+      .use(
+        middlewareMock(42, 100),
+        matchRoutes(matcher)
+          .case('add',
+            middlewareMock(10),
+            matchRoutes(matcher)
+              .case('add', middlewareMock(5, 100))
+              .case('substract', middlewareMock(-5, 100))
+              .end()
+          )
+          .case('substract',
+            middlewareMock(-10),
+            matchRoutes(matcher)
+              .case('add', middlewareMock(5, 100))
+              .case('substract', middlewareMock(-5, 100))
+              .end()
+          )
+          .end(),
+        controllerMock
+      ).use(errorHandlerMock);
+
+    matcher.mockResolvedValueOnce('add');
+    matcher.mockResolvedValueOnce('add');
+    await request(app).get('/').expect(200, `state is ${42 + 10 + 5}`);
+
+    matcher.mockResolvedValueOnce('substract');
+    matcher.mockResolvedValueOnce('substract');
+    await request(app).get('/').expect(200, `state is ${42 - 10 - 5}`);
+
+    matcher.mockResolvedValueOnce('add');
+    matcher.mockResolvedValueOnce('substract');
+    await request(app).get('/').expect(200, `state is ${42 + 10 - 5}`);
+
+    matcher.mockResolvedValueOnce('substract');
+    matcher.mockResolvedValueOnce('add');
+    await request(app).get('/').expect(200, `state is ${42 - 10 + 5}`);
+  });
 });
