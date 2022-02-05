@@ -182,7 +182,10 @@ describe('Test routes matcher middleware', () => {
           .case('string', middlewareMock('String'))
           .case(42, middlewareMock('Number'))
           .case(false, middlewareMock('Boolean'))
+          .case(null, middlewareMock('Null'))
+          .case(undefined, middlewareMock('Undefined'))
           .case(['foo', 'bar', null, 42], middlewareMock('Array'))
+          .default(middlewareMock('Default'))
           .end(),
         controllerMock
       ).use(errorHandlerMock);
@@ -196,8 +199,17 @@ describe('Test routes matcher middleware', () => {
     matcher.mockResolvedValueOnce(false);
     await request(app).get('/').expect(200, 'state is Boolean');
 
+    matcher.mockResolvedValueOnce(null);
+    await request(app).get('/').expect(200, 'state is Null');
+
+    matcher.mockResolvedValueOnce(undefined);
+    await request(app).get('/').expect(200, 'state is Undefined');
+
     matcher.mockResolvedValueOnce(['foo', 'bar', null, 42]);
     await request(app).get('/').expect(200, 'state is Array');
+
+    matcher.mockResolvedValueOnce('everything else');
+    await request(app).get('/').expect(200, 'state is Default');
   });
 
   it('should test complex structure', async () => {
@@ -238,5 +250,39 @@ describe('Test routes matcher middleware', () => {
     matcher.mockResolvedValueOnce('substract');
     matcher.mockResolvedValueOnce('add');
     await request(app).get('/').expect(200, `state is ${42 - 10 + 5}`);
+  });
+
+  it('should test external prebuilded middleware splitters', async () => {
+    const externalSplitterChars = matchRoutes(matcher)
+      .case('a', middlewareMock('A'))
+      .case('b', middlewareMock('B'))
+      .default(middlewareMock('C'))
+      .end();
+
+    const externalSplitterNumbers = matchRoutes(matcher)
+      .case(13, middlewareMock('13'))
+      .case(42, middlewareMock('42'))
+      .default(middlewareMock('0'))
+      .end();
+
+    const app = express()
+      .use(
+        middlewareMock('['),
+        externalSplitterChars,
+        externalSplitterNumbers,
+        externalSplitterChars,
+        externalSplitterNumbers,
+        middlewareMock(']'),
+        controllerMock
+      ).use(errorHandlerMock);
+
+    matcher.mockResolvedValueOnce('a');
+    matcher.mockResolvedValueOnce(13);
+    matcher.mockResolvedValueOnce('b');
+    matcher.mockResolvedValueOnce(42);
+    await request(app).get('/').expect(200, 'state is [A13B42]');
+
+    matcher.mockResolvedValue();
+    await request(app).get('/').expect(200, 'state is [C0C0]');
   });
 });
