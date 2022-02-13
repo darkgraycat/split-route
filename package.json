@@ -1,12 +1,13 @@
 {
   "name": "split-route",
   "version": "1.0.0",
-  "description": "",
+  "description": "Express middleware builder used to split behavior in route",
   "main": "index.js",
   "scripts": {
     "test": "jest --detectOpenHandles",
     "test:coverage": "jest --coverage --detectOpenHandles"
   },
+  "keywords": ["express", "split", "route", "middleware", "builder"],
   "author": "darkgraycat",
   "license": "MIT",
   "devDependencies": {
