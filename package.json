@@ -1,16 +1,14 @@
 {
-  "name": "splitter_middleware",
+  "name": "split-route",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "jest --detectOpenHandles",
-    "test:coverage": "jest --coverage --detectOpenHandles",
-    "dev": "nodemon src",
-    "start": "node src"
+    "test:coverage": "jest --coverage --detectOpenHandles"
   },
   "author": "darkgraycat",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "@types/express": "^4.17.13",
     "@types/jest": "^27.4.0",

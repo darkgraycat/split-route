@@ -1,6 +1,6 @@
 const express = require('express');
 const request = require('supertest');
-const matchRoutes = require('../lib');
+const splitRoute = require('../lib');
 
 describe('Test routes matcher middleware', () => {
   const matcher = jest.fn();
@@ -19,7 +19,7 @@ describe('Test routes matcher middleware', () => {
   it('should test basic basic splitting', async () => {
     const app = express()
       .use(
-        matchRoutes(matcher)
+        splitRoute(matcher)
           .case('a', middlewareMock('A'))
           .case('b', middlewareMock('B'))
           .case('withError', middlewareMock('', 200, new Error('error')))
@@ -43,7 +43,7 @@ describe('Test routes matcher middleware', () => {
   it('should test async functionality', async () => {
     const app = express()
       .use(
-        matchRoutes(matcher)
+        splitRoute(matcher)
           .case('a', middlewareMock('A', 500))
           .case('b', middlewareMock('B', 1000))
           .case('withError', middlewareMock('', 200, new Error('error')))
@@ -67,7 +67,7 @@ describe('Test routes matcher middleware', () => {
   it('should test middlewares chaining', async () => {
     const app = express()
       .use(
-        matchRoutes(matcher)
+        splitRoute(matcher)
           .case('numbers',
             middlewareMock('1'),
             middlewareMock('2'),
@@ -94,7 +94,7 @@ describe('Test routes matcher middleware', () => {
   it('should test default middlewares set', async () => {
     const app = express()
       .use(
-        matchRoutes(matcher)
+        splitRoute(matcher)
           .case('common', middlewareMock('A', 50), middlewareMock('B', 50))
           .case('withError', middlewareMock('', 200, new Error('error')))
           .default(middlewareMock('DEF'), middlewareMock('AULT'))
@@ -115,8 +115,8 @@ describe('Test routes matcher middleware', () => {
   it('should test splitter inside splitter', async () => {
     const app = express()
       .use(
-        matchRoutes(matcher)
-          .case('splitted', matchRoutes(matcher)
+        splitRoute(matcher)
+          .case('splitted', splitRoute(matcher)
             .case('splitted A', middlewareMock('SPL', 10), middlewareMock('ITT', 20), middlewareMock('ED A', 30))
             .case('splitted B', middlewareMock('SPLIT', 40), middlewareMock('TED B', 50))
             .default(middlewareMock('SPLITTED'), middlewareMock(' DEFAULT', 100))
@@ -150,7 +150,7 @@ describe('Test routes matcher middleware', () => {
   it('should test error handling functionality', async () => {
     const app = express()
       .use(
-        matchRoutes(matcher)
+        splitRoute(matcher)
           .case('a',
             (req, res, next) => { throw new Error('A unhandled error'); },
             (req, res, next) => { return next(new Error('A error from next')); }
@@ -178,7 +178,7 @@ describe('Test routes matcher middleware', () => {
   it('should test various types of case values', async () => {
     const app = express()
       .use(
-        matchRoutes(matcher)
+        splitRoute(matcher)
           .case('string', middlewareMock('String'))
           .case(42, middlewareMock('Number'))
           .case(false, middlewareMock('Boolean'))
@@ -216,17 +216,17 @@ describe('Test routes matcher middleware', () => {
     const app = express()
       .use(
         middlewareMock(42, 100),
-        matchRoutes(matcher)
+        splitRoute(matcher)
           .case('add',
             middlewareMock(10),
-            matchRoutes(matcher)
+            splitRoute(matcher)
               .case('add', middlewareMock(5, 100))
               .case('substract', middlewareMock(-5, 100))
               .end()
           )
           .case('substract',
             middlewareMock(-10),
-            matchRoutes(matcher)
+            splitRoute(matcher)
               .case('add', middlewareMock(5, 100))
               .case('substract', middlewareMock(-5, 100))
               .end()
@@ -253,13 +253,13 @@ describe('Test routes matcher middleware', () => {
   });
 
   it('should test external prebuilded middleware splitters', async () => {
-    const externalSplitterChars = matchRoutes(matcher)
+    const externalSplitterChars = splitRoute(matcher)
       .case('a', middlewareMock('A'))
       .case('b', middlewareMock('B'))
       .default(middlewareMock('C'))
       .end();
 
-    const externalSplitterNumbers = matchRoutes(matcher)
+    const externalSplitterNumbers = splitRoute(matcher)
       .case(13, middlewareMock('13'))
       .case(42, middlewareMock('42'))
       .default(middlewareMock('0'))
