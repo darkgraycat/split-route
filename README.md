@@ -16,9 +16,9 @@ router.get('/',
 )
 ```
 Route above has 3 different behaviors depending on header value passed:
-1. **header=typeC** middlewares called: `A B C1 C2 F`
-2. **header=typeD** middlewares called: `A B D1 D2 F`
-3. **header=something** middlewares called: `A B E F`
+1. **type=typeC** middlewares called: `A B C1 C2 F`
+2. **type=typeD** middlewares called: `A B D1 D2 F`
+3. **type=something** middlewares called: `A B E F`
 
-*Please look at `tests/index.test.js` for more examples*
+*Please look at [`tests/index.test.js`](https://github.com/darkgraycat/split-route/blob/main/tests/index.test.js) for more examples*
  
