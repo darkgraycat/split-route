@@ -1,24 +1,55 @@
 # split-route
-Express middleware builder that can split behavior in single route
+### _Express middleware builder that can split behavior in single route_
 
-# example
-```js
-router.get('/',
-  middlewareA,
-  middlewareB,
-  splitRoute(req => req.get('type'))
-    .case('typeC', middlewareC1, middlewareC2)
-    .case('typeD', middlewareD1, middlewareD2)
-    .default(middlewareE)
-    .end(),
-  middlewareF,
-  controller
-)
+<hr/> 
+<br/>
+
+# Install
+```bash
+npm install split-route
 ```
-Route above has 3 different behaviors depending on header value passed:
-1. **type=typeC** middlewares called: `A B C1 C2 F`
-2. **type=typeD** middlewares called: `A B D1 D2 F`
-3. **type=something** middlewares called: `A B E F`
 
-*Please look at [`tests/index.test.js`](https://github.com/darkgraycat/split-route/blob/main/tests/index.test.js) for more examples*
- 
+# Usage
+
+### Simple calculator app
+```js
+const app = require('express')();
+const splitRoute = require('split-route');
+
+app.use('/:a/:operator/:b', 
+  
+  // middleware that inits state
+  (req, res, next) => { res.state = req.params.a; next(); },
+
+  // call builder with callback that returns 'operator' param
+  splitRoute((req, res) => req.params.operator)
+    // if operator == plus
+    .case('plus', (req, res, next) => { res.state += req.params.b; next(); })
+    // if operator == minus
+    .case('minus', (req, res, next) => { res.state -= req.params.b; next(); })
+    // if operator != plus && operator != minus
+    .default((req, res, next) => { console.warn('invalid operator'); next(); })
+    // return builded middleware
+    .end(),
+  
+  // simple controller
+  (req, res) => { res.send(res.state) }
+);
+```
+
+### Splitter inside splitter
+```js
+app.use('/',
+  // ...
+  splitRoute(cb) // 'cb' may return a, b or c
+    .case('a', middlewareA1, middlewareA2)
+    .case('b', middlewareB1, middlewareB2)
+    .case('c', splitRoute(cb) // 'cb' may return 1 or 2
+      .case(1, middlewareC1)
+      .case(2, middlewareC2)
+      .default(middlewareC0).end()
+    ).end()
+  //...
+  controller
+);
+```
